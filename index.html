@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Evaluasi Sekolah</title>
+    <style>
+        * { box-sizing: border-box; font-family: Arial, sans-serif; }
+        body, html { margin: 0; padding: 0; height: 100%; background-color: #f4f4f9; }
+        .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; position: relative; }
+        
+        input, select { width: 100%; padding: 12px; margin: 8px 0 15px; border: 1px solid #ccc; border-radius: 5px; font-size: 1rem; }
+        .input-group { text-align: left; margin-bottom: 5px; }
+        .input-group label { font-size: 0.85rem; font-weight: bold; color: #555; }
+        
+        button { width: 100%; padding: 15px; font-size: 1rem; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; color: white; margin-bottom: 10px; transition: 0.2s; }
+        .btn-lanjut { background-color: #007bff; }
+        .btn-ujian { background-color: #dc3545; } 
+        .btn-tugas { background-color: #28a745; }
+        .btn-admin { background-color: #333; }
+        .btn-download { background-color: #17a2b8; }
+        button:disabled { background-color: #999; cursor: not-allowed; }
+
+        .btn-secret { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #ccc; width: auto; padding: 0; }
+        
+        #portal-home, #exam-container, #admin-panel { display: none; }
+        #exam-container { width: 100%; height: 100vh; }
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        #warning-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(220, 53, 69, 0.95); color: white; z-index: 9999; text-align: center; padding-top: 25vh; }
+        .status-text { font-size: 0.85rem; color: #ff9800; font-weight: bold; margin-bottom: 15px; }
+        .divider { margin: 20px 0; border: 0; border-top: 2px dashed #eee; }
+    </style>
+</head>
+<body oncontextmenu="return false" oncopy="return false" onpaste="return false">
+
+    <!-- 1. LOGIN SISWA -->
+    <div class="container" id="login-screen">
+        <div class="card">
+            <button class="btn-secret" onclick="bukaAdmin()">⚙️</button>
+            <h2 style="margin-top: 0;">Portal Evaluasi</h2>
+            <p style="color: #666;">Masukkan identitas sebelum memulai</p>
+            <input type="text" id="namaSiswa" placeholder="Nama Lengkap" required>
+            <select id="kelasSiswa">
+                <option value="X Fisika">Kelas X Fisika</option>
+                <option value="XI Fisika">Kelas XI Fisika</option>
+                <option value="XII Fisika">Kelas XII Fisika</option>
+            </select>
+            <button class="btn-lanjut" onclick="masukPortal()">Masuk Portal</button>
+        </div>
+    </div>
+
+    <!-- 2. PILIH MODE -->
+    <div class="container" id="portal-home">
+        <div class="card">
+            <h2>Pilih Sesi</h2>
+            <div id="loading-status" class="status-text">⏳ Sinkronisasi dengan server...</div>
+            <button id="btn-mode-ujian" class="btn-ujian" disabled onclick="mulaiEvaluasi('ujian', 'Ujian Ketat')">📝 Mode Ujian (Diawasi)</button>
+            <button id="btn-mode-tugas" class="btn-tugas" disabled onclick="mulaiEvaluasi('tugas', 'Tugas Mandiri')">📚 Mode Tugas (Bebas)</button>
+        </div>
+    </div>
+
+    <!-- 3. PANEL ADMIN -->
+    <div class="container" id="admin-panel">
+        <div class="card" style="max-height: 90vh; overflow-y: auto;">
+            <h2 style="color:#333; margin-top:0;">⚙️ Panel Admin</h2>
+            
+            <!-- Pengaturan Ujian -->
+            <div class="input-group"><label>Link G-Form Ujian</label><input type="text" id="inputLinkUjian"></div>
+            <div class="input-group"><label>Link G-Form Tugas</label><input type="text" id="inputLinkTugas"></div>
+            <div class="input-group"><label>PIN Buka Kunci Layar (Untuk Guru)</label><input type="text" id="inputPinGuru"></div>
+            <div class="input-group"><label>Batas Toleransi Pindah Tab</label><input type="number" id="inputBatas"></div>
+            <button class="btn-admin" onclick="simpanPengaturan()">💾 Simpan Pengaturan</button>
+            
+            <hr class="divider">
+            
+            <!-- Fitur Download Log -->
+            <h3 style="margin: 0 0 10px 0; font-size: 1.1rem; color: #17a2b8;">📥 Download Log Kecurangan</h3>
+            <div class="input-group"><label>Pilih Tanggal Ulangan</label><input type="date" id="inputTanggalDownload"></div>
+            <button class="btn-download" onclick="downloadLog()">Unduh Excel (CSV)</button>
+
+            <button class="btn-secret" style="position:static; margin-top:10px; color:#dc3545;" onclick="tutupAdmin()">Tutup Panel Admin</button>
+        </div>
+    </div>
+
+    <!-- 4. IFRAME UJIAN -->
+    <div id="exam-container"><iframe id="exam-frame" src=""></iframe></div>
+    
+    <!-- 5. LAYAR MERAH -->
+    <div id="warning-screen">
+        <h1>⚠️ PERINGATAN!</h1>
+        <p id="teks-peringatan" style="font-size: 1.1rem; padding: 0 20px;">Anda terdeteksi keluar dari halaman ujian.</p>
+        <button id="btn-mengerti" onclick="kembaliUjian()" style="background: white; color: #dc3545; width: auto; padding: 10px 20px; border-radius: 5px;">Saya Mengerti</button>
+        <button id="btn-buka-kunci" onclick="bukaKunciGuru()" style="display: none; background: #ffc107; color: #333; width: auto; padding: 10px 20px; border-radius: 5px; margin-top: 15px;">🔑 Buka Kunci (Guru)</button>
+    </div>
+
+    <script>
+        // ==========================================
+        // WAJIB GANTI URL DI BAWAH INI DENGAN URL WEB APP ANDA
+        const URL_APPSCRIPT = "https://script.google.com/macros/s/AKfycbxgNc9ore-o6l4SQeNNhWk_H35sh0WhjO36zfHaArpVh7-bHQETYk8ed02oACWplWWNDg/exec";
+        
+        // PIN untuk membuka Panel Admin di HP Anda
+        const PIN_ADMIN = "123456"; 
+        // ==========================================
+
+        let dataServer = { ujian: "", tugas: "", pin_guru: "8899", batas_toleransi: 3 };
+        let sistemAktif = false, modeSaatIni = "", pelanggaran = 0;
+
+        window.onload = function() {
+            fetch(URL_APPSCRIPT)
+                .then(res => res.json())
+                .then(data => {
+                    dataServer = data;
+                    document.getElementById("loading-status").innerText = "✅ Sistem Siap!";
+                    document.getElementById("loading-status").style.color = "#28a745";
+                    document.getElementById("btn-mode-ujian").disabled = false;
+                    document.getElementById("btn-mode-tugas").disabled = false;
+                    
+                    document.getElementById("inputLinkUjian").value = data.ujian;
+                    document.getElementById("inputLinkTugas").value = data.tugas;
+                    document.getElementById("inputPinGuru").value = data.pin_guru;
+                    document.getElementById("inputBatas").value = data.batas_toleransi;
+                })
+                .catch(err => {
+                    document.getElementById("loading-status").innerText = "❌ Gagal koneksi ke server.";
+                    document.getElementById("loading-status").style.color = "red";
+                });
+        };
+
+        // --- FUNGSI ADMIN ---
+        function bukaAdmin() {
+            let pin = prompt("Masukkan PIN Admin:");
+            if (pin === PIN_ADMIN) {
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("admin-panel").style.display = "flex";
+            } else if (pin !== null) { alert("PIN Salah!"); }
+        }
+
+        function tutupAdmin() {
+            document.getElementById("admin-panel").style.display = "none";
+            document.getElementById("login-screen").style.display = "flex";
+        }
+
+        function simpanPengaturan() {
+            let btn = document.querySelector(".btn-admin");
+            btn.innerText = "⏳ Menyimpan...";
+            
+            let formData = new URLSearchParams();
+            formData.append("action", "simpan_pengaturan");
+            formData.append("link_ujian", document.getElementById("inputLinkUjian").value);
+            formData.append("link_tugas", document.getElementById("inputLinkTugas").value);
+            formData.append("pin_guru", document.getElementById("inputPinGuru").value);
+            formData.append("batas_toleransi", document.getElementById("inputBatas").value);
+
+            fetch(URL_APPSCRIPT, {
+                method: "POST", mode: "no-cors",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: formData.toString()
+            }).then(() => {
+                alert("Pengaturan Berhasil Disimpan!");
+                location.reload(); 
+            });
+        }
+
+        // --- FITUR DOWNLOAD LOG KECURANGAN ---
+        function downloadLog() {
+            let tgl = document.getElementById("inputTanggalDownload").value;
+            if (!tgl) { alert("Silakan pilih tanggal ulangan terlebih dahulu!"); return; }
+            
+            // Buka URL AppScript di tab baru untuk men-trigger download file CSV otomatis
+            let downloadUrl = URL_APPSCRIPT + "?action=download_log&tanggal=" + tgl;
+            window.open(downloadUrl, '_blank');
+        }
+
+        // --- FUNGSI SISWA ---
+        function masukPortal() {
+            if(document.getElementById("namaSiswa").value.trim() === "") { alert("Nama wajib diisi!"); return; }
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("portal-home").style.display = "flex";
+        }
+
+        function mulaiEvaluasi(jenis, modeStr) {
+            let urlTujuan = jenis === 'ujian' ? dataServer.ujian : dataServer.tugas;
+            if (!urlTujuan || urlTujuan === "") { alert("Guru belum mengatur Link untuk sesi ini!"); return; }
+
+            modeSaatIni = modeStr;
+            document.getElementById("portal-home").style.display = "none";
+            document.getElementById("exam-container").style.display = "block";
+            document.getElementById("exam-frame").src = urlTujuan;
+            sistemAktif = true;
+        }
+
+        function kirimLogKeSheets() {
+            let formData = new URLSearchParams();
+            formData.append("action", "simpan_log");
+            formData.append("nama", document.getElementById("namaSiswa").value);
+            formData.append("kelas", document.getElementById("kelasSiswa").value);
+            formData.append("pelanggaran", pelanggaran);
+            formData.append("mode", modeSaatIni);
+
+            fetch(URL_APPSCRIPT, {
+                method: "POST", mode: "no-cors", 
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: formData.toString()
+            });
+        }
+
+        document.addEventListener("visibilitychange", function() {
+            if (sistemAktif && document.hidden) {
+                pelanggaran++;
+                kirimLogKeSheets();
+
+                if (modeSaatIni === "Ujian Ketat") {
+                    document.getElementById("warning-screen").style.display = "block";
+                    
+                    if (pelanggaran >= dataServer.batas_toleransi) {
+                        document.getElementById("teks-peringatan").innerText = `Layar Terkunci! Anda telah keluar ${pelanggaran} kali. Panggil Guru Pengawas!`;
+                        document.getElementById("btn-mengerti").style.display = "none"; 
+                        document.getElementById("btn-buka-kunci").style.display = "inline-block"; 
+                    } else {
+                        document.getElementById("teks-peringatan").innerText = `Anda terdeteksi keluar dari halaman ujian. (Pelanggaran ke-${pelanggaran})`;
+                    }
+                }
+            }
+        });
+
+        function kembaliUjian() { document.getElementById("warning-screen").style.display = "none"; }
+
+        function bukaKunciGuru() {
+            let pin = prompt("Masukkan PIN Guru untuk membuka ujian:");
+            if (pin === dataServer.pin_guru) {
+                document.getElementById("warning-screen").style.display = "none";
+                document.getElementById("btn-mengerti").style.display = "inline-block";
+                document.getElementById("btn-buka-kunci").style.display = "none";
+                alert("Kunci dibuka. Jangan mengulangi lagi!");
+            } else if (pin !== null) {
+                alert("PIN Salah! Anda tidak berhak membuka layar ini.");
+            }
+        }
+    </script>
+</body>
+</html>
