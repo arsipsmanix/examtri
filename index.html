@@ -7,6 +7,8 @@
     <style>
         * { box-sizing: border-box; font-family: Arial, sans-serif; }
         body, html { margin: 0; padding: 0; height: 100%; background-color: #f4f4f9; }
+        
+        /* --- KELAS UTAMA --- */
         .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
         .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; position: relative; }
         
@@ -25,15 +27,28 @@
         .btn-secret { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #ccc; width: auto; padding: 0; }
         
         #portal-home, #exam-container, #admin-panel { display: none; }
-        #exam-container { width: 100%; height: 100vh; }
-        iframe { width: 100%; height: 100%; border: none; }
-        
-        #warning-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(220, 53, 69, 0.95); color: white; z-index: 9999; text-align: center; padding-top: 25vh; }
         .status-text { font-size: 0.85rem; color: #ff9800; font-weight: bold; margin-bottom: 15px; }
         .divider { margin: 20px 0; border: 0; border-top: 2px dashed #eee; }
+
+        /* --- HEADER CBT & IFRAME --- */
+        #exam-container { width: 100%; height: 100vh; flex-direction: column; }
+        .exam-header {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #ffffff; height: 50px; padding: 0 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 100;
+        }
+        .exam-header .status-teks { font-size: 0.85rem; font-weight: bold; color: #555; display: flex; align-items: center; gap: 8px; }
+        .dot-indicator { width: 8px; height: 8px; background-color: #28a745; border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        
+        .btn-exit-header { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; cursor: pointer; width: auto; margin: 0; }
+        iframe { width: 100%; flex-grow: 1; border: none; }
+        
+        /* --- LAYAR MERAH (HUKUMAN) --- */
+        #warning-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(220, 53, 69, 0.95); color: white; z-index: 9999; text-align: center; padding-top: 25vh; }
     </style>
 </head>
-<body oncontextmenu="return false" oncopy="return false" onpaste="return false">
+<body> <!-- Perhatikan: Atribut gembok dipindah ke JavaScript agar lebih pintar -->
 
     <!-- 1. LOGIN SISWA -->
     <div class="container" id="login-screen">
@@ -66,16 +81,14 @@
         <div class="card" style="max-height: 90vh; overflow-y: auto;">
             <h2 style="color:#333; margin-top:0;">⚙️ Panel Admin</h2>
             
-            <!-- Pengaturan Ujian -->
             <div class="input-group"><label>Link G-Form Ujian</label><input type="text" id="inputLinkUjian"></div>
             <div class="input-group"><label>Link G-Form Tugas</label><input type="text" id="inputLinkTugas"></div>
-            <div class="input-group"><label>PIN Buka Kunci Layar (Untuk Guru)</label><input type="text" id="inputPinGuru"></div>
+            <div class="input-group"><label>PIN Buka Kunci Layar (Guru)</label><input type="text" id="inputPinGuru"></div>
             <div class="input-group"><label>Batas Toleransi Pindah Tab</label><input type="number" id="inputBatas"></div>
             <button class="btn-admin" onclick="simpanPengaturan()">💾 Simpan Pengaturan</button>
             
             <hr class="divider">
             
-            <!-- Fitur Download Log -->
             <h3 style="margin: 0 0 10px 0; font-size: 1.1rem; color: #17a2b8;">📥 Download Log Kecurangan</h3>
             <div class="input-group"><label>Pilih Tanggal Ulangan</label><input type="date" id="inputTanggalDownload"></div>
             <button class="btn-download" onclick="downloadLog()">Unduh Excel (CSV)</button>
@@ -84,8 +97,17 @@
         </div>
     </div>
 
-    <!-- 4. IFRAME UJIAN -->
-    <div id="exam-container"><iframe id="exam-frame" src=""></iframe></div>
+    <!-- 4. IFRAME UJIAN (Dengan Header CBT) -->
+    <div id="exam-container">
+        <div class="exam-header">
+            <div class="status-teks">
+                <div class="dot-indicator"></div>
+                <span id="label-mode-ujian">Sistem Pengawasan Aktif</span>
+            </div>
+            <button class="btn-exit-header" onclick="siswaSelesai()">🚪 Akhiri & Keluar</button>
+        </div>
+        <iframe id="exam-frame" src=""></iframe>
+    </div>
     
     <!-- 5. LAYAR MERAH -->
     <div id="warning-screen">
@@ -98,15 +120,20 @@
     <script>
         // ==========================================
         // WAJIB GANTI URL DI BAWAH INI DENGAN URL WEB APP ANDA
-        const URL_APPSCRIPT = "https://script.google.com/macros/s/AKfycbxgNc9ore-o6l4SQeNNhWk_H35sh0WhjO36zfHaArpVh7-bHQETYk8ed02oACWplWWNDg/exec";
+        const URL_APPSCRIPT = "PASTE_URL_WEB_APP_RAHASIA_DI_SINI";
         
-        // PIN untuk membuka Panel Admin di HP Anda
+        // PIN ADMIN UNTUK AKSES PANEL
         const PIN_ADMIN = "123456"; 
         // ==========================================
 
         let dataServer = { ujian: "", tugas: "", pin_guru: "8899", batas_toleransi: 3 };
         let sistemAktif = false, modeSaatIni = "", pelanggaran = 0;
 
+        // --- SMART ANTI-COPAS (Kecuali di kolom input Panel Admin) ---
+        document.addEventListener('contextmenu', function(e) { if (e.target.tagName !== 'INPUT') e.preventDefault(); });
+        document.addEventListener('copy', function(e) { if (e.target.tagName !== 'INPUT') e.preventDefault(); });
+
+        // --- FETCH DATA DARI GOOGLE SHEETS ---
         window.onload = function() {
             fetch(URL_APPSCRIPT)
                 .then(res => res.json())
@@ -163,12 +190,9 @@
             });
         }
 
-        // --- FITUR DOWNLOAD LOG KECURANGAN ---
         function downloadLog() {
             let tgl = document.getElementById("inputTanggalDownload").value;
             if (!tgl) { alert("Silakan pilih tanggal ulangan terlebih dahulu!"); return; }
-            
-            // Buka URL AppScript di tab baru untuk men-trigger download file CSV otomatis
             let downloadUrl = URL_APPSCRIPT + "?action=download_log&tanggal=" + tgl;
             window.open(downloadUrl, '_blank');
         }
@@ -186,11 +210,39 @@
 
             modeSaatIni = modeStr;
             document.getElementById("portal-home").style.display = "none";
-            document.getElementById("exam-container").style.display = "block";
+            
+            // Atur tampilan header berdasarkan mode
+            if (jenis === 'ujian') {
+                document.getElementById("label-mode-ujian").innerText = "Sistem Pengawasan Aktif";
+                document.querySelector(".dot-indicator").style.backgroundColor = "#28a745"; // Hijau berkedip
+            } else {
+                document.getElementById("label-mode-ujian").innerText = "Mode Tugas (Bebas)";
+                document.querySelector(".dot-indicator").style.backgroundColor = "#ccc"; // Abu-abu diam
+                document.querySelector(".dot-indicator").style.animation = "none";
+            }
+
+            document.getElementById("exam-container").style.display = "flex";
             document.getElementById("exam-frame").src = urlTujuan;
             sistemAktif = true;
         }
 
+        // --- FUNGSI KELUAR AMAN ---
+        function siswaSelesai() {
+            let konfirmasi = confirm("Apakah kamu yakin sudah klik SUBMIT di Google Form dan ingin keluar dari portal?");
+            if (konfirmasi) {
+                sistemAktif = false; 
+                pelanggaran = 0; 
+                
+                document.getElementById("exam-container").style.display = "none";
+                document.getElementById("exam-frame").src = "";
+                document.getElementById("namaSiswa").value = "";
+                document.getElementById("login-screen").style.display = "flex";
+                
+                alert("Kamu telah keluar dari ujian dengan aman. Silakan tutup browser.");
+            }
+        }
+
+        // --- SISTEM DETEKSI KECURANGAN & LOGGING ---
         function kirimLogKeSheets() {
             let formData = new URLSearchParams();
             formData.append("action", "simpan_log");
