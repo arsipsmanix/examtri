@@ -76,24 +76,38 @@
         </div>
     </div>
 
-    <!-- 3. PANEL ADMIN -->
+    <!-- 3. PANEL ADMIN (YANG ADA TOMBOL DOWNLOAD/SHEETS) -->
     <div class="container" id="admin-panel">
         <div class="card" style="max-height: 90vh; overflow-y: auto;">
             <h2 style="color:#333; margin-top:0;">⚙️ Panel Admin</h2>
+            <p style="font-size:0.85rem; color:#666;">Ubah pengaturan sistem secara real-time.</p>
             
-            <div class="input-group"><label>Link G-Form Ujian</label><input type="text" id="inputLinkUjian"></div>
-            <div class="input-group"><label>Link G-Form Tugas</label><input type="text" id="inputLinkTugas"></div>
-            <div class="input-group"><label>PIN Buka Kunci Layar (Guru)</label><input type="text" id="inputPinGuru"></div>
-            <div class="input-group"><label>Batas Toleransi Pindah Tab</label><input type="number" id="inputBatas"></div>
+            <div class="input-group">
+                <label>Link G-Form Ujian</label>
+                <input type="text" id="inputLinkUjian" placeholder="Paste Link Ujian">
+            </div>
+            <div class="input-group">
+                <label>Link G-Form Tugas</label>
+                <input type="text" id="inputLinkTugas" placeholder="Paste Link Tugas">
+            </div>
+            <div class="input-group">
+                <label>PIN Buka Kunci Layar (Untuk Guru)</label>
+                <input type="text" id="inputPinGuru" placeholder="Contoh: 8899">
+            </div>
+            <div class="input-group">
+                <label>Batas Toleransi Pindah Tab</label>
+                <input type="number" id="inputBatas" placeholder="Contoh: 3">
+            </div>
+            
             <button class="btn-admin" onclick="simpanPengaturan()">💾 Simpan Pengaturan</button>
             
+            <!-- SISIPAN TOMBOL REKAP/DOWNLOAD DI SINI -->
             <hr class="divider">
-            
-            <h3 style="margin: 0 0 10px 0; font-size: 1.1rem; color: #17a2b8;">📥 Download Log Kecurangan</h3>
-            <div class="input-group"><label>Pilih Tanggal Ulangan</label><input type="date" id="inputTanggalDownload"></div>
-            <button class="btn-download" onclick="downloadLog()">Unduh Excel (CSV)</button>
+            <h3 style="margin: 0 0 10px 0; font-size: 1.1rem; color: #17a2b8;">📊 Rekap Pelanggaran</h3>
+            <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Lihat dan filter data kecurangan langsung di Google Sheets.</p>
+            <button class="btn-download" onclick="bukaGoogleSheets()">📊 Buka Google Sheets Rekap</button>
 
-            <button class="btn-secret" style="position:static; margin-top:10px; color:#dc3545;" onclick="tutupAdmin()">Tutup Panel Admin</button>
+            <button class="btn-secret" style="position:static; margin-top:15px; color:#dc3545;" onclick="tutupAdmin()">Batal / Tutup Panel</button>
         </div>
     </div>
 
@@ -118,6 +132,9 @@
     </div>
 
     <script>
+        // Paste Link Google Sheets Rekap Pelanggaranmu di Sini
+        const LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/18x-HnUPqpfMfAe2RSkU5eBbVQycEivJOFQb9-RNd_rs/edit";
+        
         // ==========================================
         // WAJIB GANTI URL DI BAWAH INI DENGAN URL WEB APP ANDA
         const URL_APPSCRIPT = "https://script.google.com/macros/s/AKfycbxgNc9ore-o6l4SQeNNhWk_H35sh0WhjO36zfHaArpVh7-bHQETYk8ed02oACWplWWNDg/exec";
@@ -190,11 +207,13 @@
             });
         }
 
-        function downloadLog() {
-            let tgl = document.getElementById("inputTanggalDownload").value;
-            if (!tgl) { alert("Silakan pilih tanggal ulangan terlebih dahulu!"); return; }
-            let downloadUrl = URL_APPSCRIPT + "?action=download_log&tanggal=" + tgl;
-            window.open(downloadUrl, '_blank');
+        function bukaGoogleSheets() {
+            if (LINK_GOOGLE_SHEETS.includes("PASTE_ID_SHEET")) {
+                alert("Kamu belum memasukkan Link Google Sheets-mu di dalam kode!");
+                return;
+            }
+            // Buka Google Sheets di tab baru
+            window.open(LINK_GOOGLE_SHEETS, '_blank');
         }
 
         // --- FUNGSI SISWA ---
