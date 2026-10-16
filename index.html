@@ -8,27 +8,45 @@
         * { box-sizing: border-box; font-family: Arial, sans-serif; }
         body, html { margin: 0; padding: 0; height: 100%; background-color: #f4f4f9; }
         
-        /* --- KELAS UTAMA --- */
+        /* --- KELAS UTAMA (Dibuat Lebih Lebar & Mewah) --- */
         .container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; position: relative; }
+        .card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); width: 100%; max-width: 750px; text-align: center; position: relative; }
         
-        input, select { width: 100%; padding: 12px; margin: 8px 0 15px; border: 1px solid #ccc; border-radius: 5px; font-size: 1rem; }
+        input, select { width: 100%; padding: 14px; margin: 8px 0 20px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
         .input-group { text-align: left; margin-bottom: 5px; }
         .input-group label { font-size: 0.85rem; font-weight: bold; color: #555; }
         
-        button { width: 100%; padding: 15px; font-size: 1rem; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; color: white; margin-bottom: 10px; transition: 0.2s; }
+        button { width: 100%; padding: 18px; font-size: 1.05rem; font-weight: bold; border-radius: 12px; border: none; cursor: pointer; color: white; transition: 0.2s; }
         .btn-lanjut { background-color: #007bff; }
         .btn-ujian { background-color: #dc3545; } 
         .btn-tugas { background-color: #28a745; }
         .btn-admin { background-color: #333; }
         .btn-download { background-color: #17a2b8; }
-        button:disabled { background-color: #999; cursor: not-allowed; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* --- TAMPILAN DINAMIS TOMBOL JEJER (PC) / SUSUN (HP) --- */
+        .button-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .button-group button {
+            flex: 1;
+        }
+
+        @media (max-width: 600px) {
+            .card { padding: 25px 20px; }
+            .button-group {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
 
         .btn-secret { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #ccc; width: auto; padding: 0; }
         
         #portal-home, #exam-container, #admin-panel { display: none; }
-        .status-text { font-size: 0.85rem; color: #ff9800; font-weight: bold; margin-bottom: 15px; }
-        .divider { margin: 20px 0; border: 0; border-top: 2px dashed #eee; }
+        .status-text { font-size: 0.9rem; color: #ff9800; font-weight: bold; margin-bottom: 15px; }
+        .divider { margin: 25px 0; border: 0; border-top: 2px dashed #eee; }
 
         /* --- HEADER CBT & IFRAME --- */
         #exam-container { width: 100%; height: 100vh; flex-direction: column; }
@@ -62,19 +80,19 @@
         }
     </style>
 </head>
-<body> <!-- Perhatikan: Atribut gembok dipindah ke JavaScript agar lebih pintar -->
+<body>
 
     <!-- 1. LOGIN SISWA -->
     <div class="container" id="login-screen">
         <div class="card">
             <button class="btn-secret" onclick="bukaAdmin()">⚙️</button>
-            <h2 style="margin-top: 0;">Portal Evaluasi</h2>
-            <p style="color: #666;">Masukkan identitas sebelum memulai</p>
+            <h2 style="margin-top: 0; font-size: 1.8rem;">Portal Evaluasi</h2>
+            <p style="color: #666; margin-bottom: 25px;">Masukkan identitas sebelum memulai</p>
             <input type="text" id="namaSiswa" placeholder="Nama Lengkap" required>
             <select id="kelasSiswa">
-                <option value="X Fisika">Kelas X Fisika</option>
-                <option value="XI Fisika">Kelas XI Fisika</option>
-                <option value="XII Fisika">Kelas XII Fisika</option>
+                <option value="X PP">Kelas X PP</option>
+                <option value="XI PP">Kelas XI PP</option>
+                <option value="XII PP">Kelas XII PP</option>
             </select>
             <button class="btn-lanjut" onclick="masukPortal()">Masuk Portal</button>
             <div class="developer-credit">
@@ -83,17 +101,20 @@
         </div>
     </div>
 
-    <!-- 2. PILIH MODE -->
+    <!-- 2. PILIH MODE (DINAMIS & LEBAR) -->
     <div class="container" id="portal-home">
         <div class="card">
-            <h2>Pilih Sesi</h2>
-            <div id="loading-status" class="status-text">⏳ Sinkronisasi dengan server...</div>
-            <button id="btn-mode-ujian" class="btn-ujian" disabled onclick="mulaiEvaluasi('ujian', 'Ujian Ketat')">📝 Mode Ujian (Diawasi)</button>
-            <button id="btn-mode-tugas" class="btn-tugas" disabled onclick="mulaiEvaluasi('tugas', 'Tugas Mandiri')">📚 Mode Tugas (Bebas)</button>
+            <h2 style="margin-top: 0; font-size: 1.8rem; color: #222;">Pilih Sesi</h2>
+            <div id="loading-status" class="status-text" style="margin-bottom: 25px;">⏳ Sinkronisasi dengan server...</div>
+            
+            <div class="button-group">
+                <button id="btn-mode-ujian" class="btn-ujian" disabled onclick="mulaiEvaluasi('ujian', 'Ujian Ketat')">📝 Mode Ujian (Diawasi)</button>
+                <button id="btn-mode-tugas" class="btn-tugas" disabled onclick="mulaiEvaluasi('tugas', 'Tugas Mandiri')">📚 Mode Tugas (Bebas)</button>
+            </div>
         </div>
     </div>
 
-    <!-- 3. PANEL ADMIN (YANG ADA TOMBOL DOWNLOAD/SHEETS) -->
+    <!-- 3. PANEL ADMIN -->
     <div class="container" id="admin-panel">
         <div class="card" style="max-height: 90vh; overflow-y: auto;">
             <h2 style="color:#333; margin-top:0;">⚙️ Panel Admin</h2>
@@ -118,17 +139,16 @@
             
             <button class="btn-admin" onclick="simpanPengaturan()">💾 Simpan Pengaturan</button>
             
-            <!-- SISIPAN TOMBOL REKAP/DOWNLOAD DI SINI -->
             <hr class="divider">
             <h3 style="margin: 0 0 10px 0; font-size: 1.1rem; color: #17a2b8;">📊 Rekap Pelanggaran</h3>
-            <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">Lihat dan filter data kecurangan langsung di Google Sheets.</p>
+            <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Lihat dan filter data kecurangan langsung di Google Sheets.</p>
             <button class="btn-download" onclick="bukaGoogleSheets()">📊 Buka Google Sheets Rekap</button>
 
             <button class="btn-secret" style="position:static; margin-top:15px; color:#dc3545;" onclick="tutupAdmin()">Batal / Tutup Panel</button>
         </div>
     </div>
 
-    <!-- 4. IFRAME UJIAN (Dengan Header CBT) -->
+    <!-- 4. IFRAME UJIAN -->
     <div id="exam-container">
         <div class="exam-header">
             <div class="status-teks">
@@ -147,7 +167,6 @@
         <button id="btn-mengerti" onclick="kembaliUjian()" style="background: white; color: #dc3545; width: auto; padding: 10px 20px; border-radius: 5px;">Saya Mengerti</button>
         <button id="btn-buka-kunci" onclick="bukaKunciGuru()" style="display: none; background: #ffc107; color: #333; width: auto; padding: 10px 20px; border-radius: 5px; margin-top: 15px;">🔑 Buka Kunci (Guru)</button>
     </div>
-
     <script>
         // Paste Link Google Sheets Rekap Pelanggaranmu di Sini
         const LINK_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/18x-HnUPqpfMfAe2RSkU5eBbVQycEivJOFQb9-RNd_rs/edit";
